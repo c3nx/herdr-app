@@ -516,7 +516,7 @@ fn font_pickers_contain_scroll_on_the_wrapper(cx: &mut TestAppContext) {
     }
 }
 
-struct RootedView(gpui::Entity<gpui_shell::ScriptView>);
+struct RootedView(gpui::Entity<gpui_shell::ShellRoot>);
 impl gpui::Render for RootedView {
     fn render(&mut self, _: &mut gpui::Window, _: &mut gpui::Context<Self>) -> impl gpui::IntoElement {
         self.0.clone()
@@ -546,12 +546,14 @@ export default class Demo extends View {
 "#).unwrap();
     let runtime = ShellRuntime::new_isolated().unwrap();
     let window = cx.add_window(|window, cx| {
-        let root = runtime.try_load(&staged.0, window, cx).unwrap();
-        RootedView(root.read(cx).content().clone().downcast().unwrap())
+        RootedView(runtime.try_load(&staged.0, window, cx).unwrap())
     });
     let mut context = VisualTestContext::from_window(window.into(), cx);
     context.update(|window, cx| window.draw(cx).clear(cx));
-    let view = window.root(&mut context).unwrap().read_with(&context, |root, _| root.0.clone());
+    let view: gpui::Entity<gpui_shell::ScriptView> = window
+        .root(&mut context)
+        .unwrap()
+        .read_with(&context, |root, cx| root.0.read(cx).content().clone().downcast().unwrap());
 
     let pinch = |x: f32, delta: f32, phase: TouchPhase, platform: bool| PinchEvent {
         position: point(px(x), px(20.)),
